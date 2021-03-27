@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>四子棋</title>
+
+  <style>
+    @keyframes putPiece {
+      from {
+        transform: scale(1.5, 1.5);
+      }
+
+      to {
+        transform: scale(1, 1);
+      }
+    }
+
+    @keyframes cellHover {
+      49.99999999% {
+        transform: scale(1, 1);
+        background-color: white;
+      }
+
+      50% {
+        transform: scale(1.2, 1.2);
+        background-color: rgb(184, 229, 250);
+      }
+
+      100% {
+        transform: scale(1, 1);
+        background-color: white;
+      }
+    }
+
+    #board {
+      border-top: 1px solid black;
+      border-bottom: 1px solid black;
+      border-left: 1px solid black;
+      border-right: 1px solid black;
+
+      margin: auto;
+      border-spacing: 0;
+
+      transition: linear 0.3s;
+    }
+
+    .boardcol {
+      border-left: 1px solid black;
+      border-right: 1px solid black;
+
+      border-spacing: 0;
+
+      background-color: grey;
+
+      transition: linear 0.1s;
+    }
+
+    .boardcol:hover {
+      background-color: rgba(0, 0, 0, 0.35);
+
+      transition: linear 0.1s;
+    }
+
+    .enabled.boardcol {
+      cursor: pointer;
+    }
+
+    .boardcell div {
+      height: 85%;
+      width: 85%;
+      margin: auto;
+      border-radius: 100%;
+    }
+
+    .blank.boardcell div {
+      background-color: white;
+
+      transition: linear 0.1s;
+    }
+
+    .hoverCell div {
+      animation: cellHover 2s infinite;
+      transition: linear 0.1s;
+    }
+
+    .orange.boardcell div {
+      background-color: rgba(225, 165, 0, 0.7);
+
+      animation: putPiece 0.5s;
+
+      transition: linear 0.1s;
+    }
+
+    .purple.boardcell div {
+      background-color: rgba(128, 0, 128, 0.3);
+
+      animation: putPiece 0.5s;
+
+      transition: linear 0.1s;
+    }
+
+    @keyframes flippurple {
+      0% {
+        background-color: purple;
+        transform: rotateX(0deg);
+      }
+
+      65% {
+        background-color: purple;
+        transform: rotateX(90deg);
+      }
+
+      100% {
+        background-color: orange;
+        transform: rotateX(0deg);
+      }
+    }
+
+    @keyframes fliporange {
+      0% {
+        background-color: orange;
+        transform: rotateX(0deg);
+      }
+
+      65% {
+        background-color: orange;
+        transform: rotateX(90deg);
+      }
+
+      100% {
+        background-color: purple;
+        transform: rotateX(0deg);
+      }
+    }
+
+    .rh div {
+      box-shadow: 0px 0px 7px 7px palevioletred;
+
+      transition: 0.3s;
+    }
+
+    .yh div {
+      box-shadow: 0px 0px 7px 7px palegoldenrod;
+
+      transition: 0.3s;
+    }
+
+    .bh div {
+      box-shadow: 0px 0px 7px 7px paleturquoise;
+
+      transition: 0.3s;
+    }
+
+    #show.purple {
+      animation: fliporange 1s;
+
+      background-color: purple;
+    }
+
+    #show.orange {
+      animation: flippurple 1s;
+
+      background-color: orange;
+    }
+
+    .blur {
+      filter: blur(3px);
+      transition: linear 0.3s;
+
+    }
+
+    #mask {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-around;
+      position: absolute;
+      width: 100%;
+      height: calc(100% - 4rem);
+      padding-bottom: 4rem;
+    }
+
+    @keyframes maskunshow {
+      0% {
+        opacity: 1;
+        z-index: 1;
+      }
+
+      99.999999% {
+        opacity: 0;
+        z-index: 1;
+      }
+
+      100% {
+        z-index: -1;
+        opacity: 0;
+      }
+    }
+
+    .unshow {
+      z-index: -1;
+      opacity: 0;
+      animation: maskunshow 0.3s;
+    }
+
+    .show {
+      z-index: 1;
+      opacity: 1;
+      transition: opacity linear 0.3s;
+    }
+
+    #hintBoard {
+      transition: linear 0.3s;
+    }
+
+  </style>
+
+  <script>
+    const offset = 300
+
+    var n, m, x, y // n行m列 x,y为坏点
+    var a // 格子边长
+    var board, firstblank
+    var state = 1 // 播放器状态（以便不同的显示）：可操作、不可操作
+    var current // 当前落子方
+    var isnf // 是否不是先手
+
+    var dir = [
+      [0, -1],
+      [1, -1],
+      [1, 0],
+      [1, 1],
+      [0, 1],
+      [-1, 1],
+      [-1, 0],
+      [-1, -1]
+    ]
+
+    function inBoard(x, y) {
+      return x >= 0 && x < n && y >= 0 && y < m
+    }
+
+    function connect(x, y, dx, dy, k, s) {
+      if (!inBoard(x + k * dx, y + k * dy) || board[x + dx][y + dy] <= 0) return
+
+      for (let i = 2; i <= k; i++)
+        if (board[x + i * dx][y + i * dy] != board[x + dx][y + dy]) return
+
+      for (let i = 1; i <= k; i++) {
+        let cell = document.querySelector("#board > tbody > tr > td:nth-child(" + (y + i * dy + 1) +
+          ") > table > tbody > tr:nth-child(" + (x + i * dx + 1) + ")")
+
+        cell.classList.add(s)
+      }
+    }
+
+    function twoconnect(x, y, dx, dy) {
+      if (!inBoard(x - dx, y - dy) || !inBoard(x + 2 * dx, y + 2 * dy)) return
+      if (board[x - dx][y - dy] != board[x + dx][y + dy] || board[x + dx][y + dy] != board[x + 2 * dx][y + 2 * dy])
+        return
+      connect(x, y, -dx, -dy, 1, "rh")
+      connect(x, y, dx, dy, 2, "rh")
+    }
+
+    function highLight(x, y) { // 高亮可变为四连的三连和四连，和刚落子的位置
+      let cell
+
+      let cells = document.querySelectorAll(".boardcell")
+      for (let i = 0; i < cells.length; i++) {
+        cell = cells[i]
+        cell.classList.remove("rh")
+        cell.classList.remove("yh")
+        cell.classList.remove("bh")
+      }
+
+      for (let i = 0; i < n; i++) {
+        for (let j = 0; j < m; j++) {
+          if (!board[i][j] && (i == n - 1 || board[i + 1][j])) {
+            for (let k = 0; k < 8; k++) {
+              connect(i, j, dir[k][0], dir[k][1], 3, "rh")
+              twoconnect(i, j, dir[k][0], dir[k][1])
+            }
+          } else if (board[i][j] > 0) {
+            for (let k = 0; k < 4; k++) {
+              connect(i - dir[k][0], j - dir[k][1], dir[k][0], dir[k][1], 4, "yh")
+            }
+          }
+        }
+      }
+
+      cell = document.querySelector("#board > tbody > tr > td:nth-child(" + (y + 1) +
+        ") > table > tbody > tr:nth-child(" + (x + 1) + ")")
+      cell.classList.add("bh")
+    }
+
+    function initBoard(row, col, nox, noy) {
+      n = row
+      m = col
+      x = nox
+      y = noy
+      board = Array(n)
+      firstblank = Array(m)
+      for (let i = 0; i < n; i++) { //初始化棋盘
+        board[i] = Array(m)
+        for (let j = 0; j < m; j++) {
+          board[i][j] = 0
+        }
+      }
+      board[x][y] = -1 // -1为坏点
+      for (let j = 0; j < m; j++) {
+        firstblank[j] = board[n - 1][j] ? n - 2 : n - 1 // 放旗子的位置
+      }
+
+      current = 0
+
+      console.log(board)
+
+      drawBoard()
+    }
+
+    function calcPara() {
+      a = Math.min((window.outerHeight - offset) / n, (window.innerWidth - 16) / m) - 4
+      // console.log((window.outerHeight - offset) / n)
+      // console.log((window.innerWidth - 16) / m)
+    } // 计算棋盘规格
+
+    function drawBoard() {
+      calcPara()
+
+      let buf = []
+
+      buf.push("<table id=\"board\">")
+      buf.push("<tr>")
+      for (let j = 0; j < m; j++) {
+        buf.push("<td style=\"padding: 0;\"><table class=\"boardcol\" onclick=\"clickCol(" + j +
+          ")\" onmouseover=\"overCell(" + j + ")\" onmouseout=\"outCell(" + j + ")\">")
+        for (let i = 0; i < n; i++) {
+          buf.push("<tr class=\"" + (board[i][j] ? board[i][j] > 0 ? board[i][j] & 1 ? "orange " : "purple " : "" :
+              "blank ") + "boardcell\"><td style=\"width: " + a + "px; height: " + a +
+            "px; display: flex;\"><div></div></td></tr>")
+        }
+        buf.push("</table></td>")
+      }
+      buf.push("</tr>")
+      buf.push("</table>")
+
+      document.querySelector("#content").innerHTML = buf.join("\n")
+
+      if (fw)
+        fw.postMessage({
+          message: "resized",
+          height: document.body.scrollHeight
+        }, "*")
+    }
+
+    window.onresize = resizeBoard
+
+    function resizeBoard() {
+      calcPara()
+
+      let cells = document.querySelectorAll(".boardcell")
+      for (let i = 0; i < cells.length; i++) {
+        let td = cells[i].firstElementChild
+        td.style.width = td.style.height = a + "px"
+      }
+
+      if (fw) {
+        fw.postMessage({
+          message: "resized",
+          height: document.body.scrollHeight
+        }, "*")
+      }
+    }
+
+    function clickCol(col) {
+      if (!state && firstblank[col] >= 0) { // 如果可以操作 并且 可以落子
+        websocket.send(JSON.stringify({
+          token: token,
+          request: "action",
+          content: JSON.stringify({
+            X: firstblank[col],
+            Y: col
+          })
+        })) // 能点击一定已经初始化棋盘，即意味着已经连接judger，可发送信息
+
+        changeState(1) // 发送信息后改变为不可操作状态，防止再次进行操作
+        // 等待返回落子情况
+        putPiece(col)
+        changeShow()
+        clearInter()
+
+        // putPiece(col)
+      }
+    }
+
+    function putPiece(col) { // 在第col列落子
+      let row = firstblank[col]
+      if (row < 0) return
+
+      board[row][col] = current + 1
+      let cell = document.querySelector("#board > tbody > tr > td:nth-child(" + (col + 1) +
+        ") > table > tbody > tr:nth-child(" + (row + 1) + ")")
+
+      cell.className = current ? "purple boardcell" : "orange boardcell"
+      current ^= 1 // 下完后换手
+
+      if (--firstblank[col] >= 0 && board[firstblank[col]][col] < 0) --firstblank[col]
+
+      overCell(col)
+
+      changeShow()
+
+      highLight(row, col)
+    }
+
+    function pickPiece(col) { // 收回col列的棋子
+      if (firstblank[col] >= n - 1 || (board[firstblank[col] + 1][col] < 0 && firstblank[col] + 2 >= n)) return
+      if (board[++firstblank[col]][col] < 0) ++firstblank[col];
+
+      let row = firstblank[col]
+
+      board[row][col] = 0
+      let cell = document.querySelector("#board > tbody > tr > td:nth-child(" + (col + 1) +
+        ") > table > tbody > tr:nth-child(" + (row + 1) + ")")
+      cell.className = "blank boardcell"
+      current ^= 1
+    }
+
+    function overCell(col) {
+      if (state) return
+
+      let row = firstblank[col]
+      if (row < 0) return
+
+      let cell = document.querySelector("#board > tbody > tr > td:nth-child(" + (col + 1) +
+        ") > table > tbody > tr:nth-child(" + (row + 1) + ")")
+      cell.classList.add("hoverCell")
+    }
+
+    function outCell(col) {
+      let row = firstblank[col]
+      if (row < 0) return
+
+      let cell = document.querySelector("#board > tbody > tr > td:nth-child(" + (col + 1) +
+        ") > table > tbody > tr:nth-child(" + (row + 1) + ")")
+      cell.classList.remove("hoverCell")
+    }
+
+    function changeState(s) {
+      state = s // 不可操作时鼠标移动到列上不显示落子位置，鼠标指针不变为pointer
+
+      let cols = document.querySelectorAll(".boardcol")
+      console.log(cols)
+      for (let j = 0; j < m; j++) {
+        if (state) {
+          cols[j].classList.remove("enabled")
+        } else {
+          cols[j].classList.add("enabled")
+        }
+      }
+    }
+
+    function loadReplay(message) {
+      initBoard(message.row, message.col, message.nox, message.noy)
+      rounds = [0].concat(message.rounds)
+      cw = message.win
+      ci = message.gameend_reason
+    }
+
+    function changeShow() {
+      let show = document.querySelector("#show") // 改变下方显示框
+      if (current) show.className = "purple"
+      else show.className = "orange"
+      setTimeout(() => {
+        if (isnf ^ current) show.firstElementChild.innerHTML = "对方回合"
+        else show.firstElementChild.innerHTML = "轮到你了"
+      }, 650);
+    }
+
+    var fw = null // 父网页
+
+    window.addEventListener('message', receiveMessage, false) // 与父网页建立通信
+    function receiveMessage(event) {
+      fw = event.source
+
+      let message = event.data
+      if (message.message == "init_replay_player") { // 初始化回放模式
+        let reader = new FileReader()
+        reader.onloadend = function () {
+          loadReplay(JSON.parse(reader.result));
+
+          event.source.postMessage({
+            message: "init_successfully",
+            number_of_frames: rounds.length // 返回总帧数
+          }, "*")
+        }
+        reader.readAsText(message.replay_data)
+      } else if (message.message == "init_spectator_player") {
+
+      } else if (message.message == "init_player_player") { // 初始化游戏模式
+        document.querySelector("#hintBoard").style.display = "flex"
+
+        // 1.连接到评测器
+        let token_b64 = message.token
+        token = atob(token_b64)
+        websocket = new WebSocket("wss://" + token)
+
+        websocket.onopen = function (event) {
+          console.log("judger connected");
+          websocket.send(JSON.stringify({
+            token: token_b64,
+            request: "connect"
+          }))
+        }
+        // 1.
+
+        // 2.连接到评测器后收到消息
+        websocket.onmessage = function (event) {
+          let data = JSON.parse(event.data)
+          if (data.request == "action") {
+            let message = JSON.parse(data.content)
+            if (message.type == 0) { // 收到棋盘信息，初始化棋盘
+              initBoard(message.row, message.col, message.nox, message.noy)
+              ct = message.time
+              isnf = !message.is_first
+              changeShow()
+            } else if (message.type == 1) { // 收到落子信息，落子
+              if (message.lastx != -1) { // 如果是初始化棋盘信息，则忽略
+                putPiece(message.lasty) // 落子
+                changeShow()
+              }
+
+              // if (current ^ isnf) {
+              // clearInter() // 自己下完了，清除计时器
+              // } else {
+              changeState(0) // 落子后如果是己方回合，切换状态
+              setInter(ct) // 开始计时
+              // }
+            } else if (message.type == 2) { // 收到输赢信息，显示
+              changeState(1) // 游戏结束，改变为不可操作状态
+              gameover(message.win, message.gameend_reason)
+            }
+          }
+        }
+        // 2.
+      } else if (message.message == "next_frame" || message.message == "load_next_frame") {
+        loadRound(curround + 1)
+      } else if (message.message == "load_frame") {
+        loadRound(message.index)
+      } else if (message.message == "load_players") {
+        showPlayers(message.players)
+      }
+    }
+
+    var rounds = [-1, 0, 1, 2, 3, 4, 5, 6, 7],
+      curround = 0,
+      cw, ci // cw为胜利方信息，ci为附加信息
+
+    function loadRound(index) { // 加载某一个回合
+      if (index < 0) return
+      if (index >= rounds.length) {
+        gameover(cw, ci)
+        return
+      }
+      if (curround == rounds.length - 1) {
+        closeMask()
+      }
+      while (curround < index) putPiece(rounds[++curround])
+      while (curround > index) {
+        pickPiece(rounds[curround--])
+
+        if (curround) {
+          let col = rounds[curround]
+          let row = firstblank[col]
+          if (board[++row][col] < 0) ++row;
+          highLight(row, col)
+        }
+      }
+    }
+
+    function showPlayers(players) { // 设置玩家
+      document.querySelector("#op").innerHTML = players[0]
+      document.querySelector("#pp").innerHTML = players[1]
+    }
+
+    function gameover(w, i) {
+      document.querySelector("#board").classList.add("blur")
+      document.querySelector("#hintBoard").classList.add("blur")
+
+      let mask = document.querySelector("#mask")
+      let win = mask.firstElementChild.firstElementChild
+      let info = mask.firstElementChild.lastElementChild
+      if (w == 0) {
+        win.style.color = "orange"
+        win.innerHTML = "橙色胜利"
+      } else if (w == 1) {
+        win.style.color = "purple"
+        win.innerHTML = "紫色胜利"
+      } else {
+        win.style.color = "black"
+        win.innerHTML = "平局"
+      }
+      info.innerHTML = i
+      mask.className = "show"
+    }
+
+    function closeMask() {
+      document.querySelector("#board").classList.remove("blur")
+      document.querySelector("#hintBoard").classList.remove("blur")
+
+      let mask = document.querySelector("#mask")
+      mask.className = "unshow"
+    }
+
+    var ct, time // ct设置的玩家思考的时间
+    var inter = null
+
+    function setInter(t) { // 设置计时器
+      let timer = document.querySelector("#timer")
+      timer.innerHTML = time = t
+
+      if (inter != null) clearInterval(inter) // 如果已经在计时了，重新计时
+
+      inter = setInterval(() => {
+        keepTime()
+      }, 1000);
+    }
+
+    function clearInter() { // 清除计时器
+      clearInterval(inter)
+      inter = null
+
+      let timer = document.querySelector("#timer")
+      timer.innerHTML = "★"
+    }
+
+    function keepTime() {
+      if (!time) {
+        clearInter()
+        return
+      }
+
+      let timer = document.querySelector("#timer")
+      timer.innerHTML = --time
+    }
+
+  </script>
+</head>
+
+<body style="background-color: white;">
+  <div style="position: relative;">
+    <div id="mask" onclick="closeMask()" class="unshow">
+      <div>
+        <p style="text-align: center; font-size: 3rem;"></p>
+        <p style="text-align: center; font-size: 2rem; color: black;"></p>
+      </div>
+    </div>
+
+    <div id="content">
+
+    </div>
+
+    <script>
+      // initBoard(8, 8, 2, 2)
+
+    </script>
+
+    <div style="display: flex; justify-content: space-around; margin-top: 1rem; display: none;" id="hintBoard">
+      <div style="display: flex;">
+        <div
+          style="border-radius: 1vw; width: 20vw; height: calc(6vw - 4px); display: flex; flex-direction: column; justify-content: space-around; border: 2px solid grey;">
+          <span style="text-align: center; font-size: 3vw;" id="timer">★</span>
+        </div>
+        <div
+          style="border-radius: 1vw; width: 20vw; height: 6vw; display: flex; flex-direction: column; justify-content: space-around;"
+          id="show" class="purple">
+          <span style="text-align: center; font-size: 3vw; color: white;"></span>
+        </div>
+        <!-- <div style="border-radius: 0.5rem; width: 10rem; height: 3rem;" onclick="setInter(15)" id="show" class="purple">
+        </div>
+        <div style="border-radius: 0.5rem; width: 10rem; height: 3rem;" onclick="gameover(0, '游戏结束')" id="show"
+          class="purple">
+        </div>
+        <div style="border-radius: 0.5rem; width: 10rem; height: 3rem;" onclick="loadRound(curround + 1)" id="show"
+          class="purple">
+        </div> -->
+      </div>
+    </div>
+
+    <div style="display: flex; justify-content: space-around; margin-top: 1rem;">
+      <div style="display: flex; align-items: center;">
+        <div style="display: flex; align-items: center;">
+          <div style="margin-right: 0.5rem; font-size: 2vw;" id="op"></div>
+          <div style="padding: 2vw; border-radius: 100%; background-color: orange;"></div>
+        </div>
+        <div style="padding: 0 2vw; font-size: 3vw; white-space: nowrap; height: min-content;">V S</div>
+        <div style="display: flex; align-items: center;">
+          <div style="padding: 2vw; border-radius: 100%; background-color: purple;"></div>
+          <div style="margin-left: 0.5rem; font-size: 2vw;" id="pp"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>

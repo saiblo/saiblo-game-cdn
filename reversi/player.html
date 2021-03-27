@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>x黑白棋x</title>
+<style type="text/css">
+*{
+margin:0;
+padding:0;
+}
+
+.text{
+margin:0 auto;
+width:200px;
+height:40px;
+text-align: center;
+line-height: 30px;
+display: block;
+font-size: 18px;
+}
+
+#can{
+margin:0px auto;
+border:1px solid green;
+display: block;
+}
+
+.skin {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  background: white;
+  background-size: cover;
+  z-index: -10;
+}
+
+</style>
+</head>
+	<body>
+	<div class="skin"></div>
+	<canvas hidden>PK</canvas>
+	<div>
+	<canvas id="can" width="480" height="480">
+		您的浏览器不支持canvas
+	</canvas>
+	</div>
+
+<!--  播放操作留给网页前端控制
+<div>
+ <input type="file" id="files"/>
+ <button onclick="next()">下一回合</button>
+ <button onclick="prev()">上一回合</button>
+</div>
+-->
+	<script>
+var DEBUG = false;
+var blockSize = 60;
+var text = document.getElementsByClassName('text');
+//定义二维数组作为棋盘
+var maps = new Array(9);
+var len = maps.length;
+// alert(len)
+for(var i=0;i<len;i++){
+maps[i] = new Array();
+	for(var j = 0;j<len;j++){
+	maps[i][j] = 0;
+	}
+}
+//初始化棋子
+var clientWidth = document.documentElement.clientWidth;
+//棋盘初始化
+var can = document.getElementById('can');
+
+window.addEventListener("message",readJson,false);
+
+function drawbg(){
+	var ctx = can.getContext("2d");  //获取该canvas的2D绘图环境对象
+	ctx.strokeStyle = "#333";
+	ctx.lineWidth = 1;
+	for(var m=0;m<len-1;m++){
+		for(var n=0;n<len-1;n++){
+				ctx.strokeRect(m*blockSize,n*blockSize,blockSize,blockSize);  //绘制70的小正方形
+			}
+	}
+}
+
+var can_move = new Array(64);
+function initmove(){
+	for (var i = 0; i < 64 ; i ++)
+		can_move[i] = false;
+}
+
+var replay = new Array(100);
+replay[0] = "2222222222222222222222222221022222201222222222222222222222222222"
+
+function draw(state){
+	cur = replay[state];
+	for (var i = 0; i < 64; i++){
+		var r = Math.floor(i/8);
+		var c = i%8;
+		var circle = can.getContext("2d");
+		if (cur[i]=='0'){  //0->黑
+			circle.beginPath();
+			circle.arc(blockSize*c+blockSize/2,blockSize*r+blockSize/2,blockSize/2-1,0,2*Math.PI);//画圆，x,y.r, ,pi值，true逆时针/false、顺时针
+			circle.strokeStyle = "black";//线条颜色
+			circle.fillStyle = "black";//填充颜色样式
+			circle.fill();//进行填充
+			circle.stroke();//开始画圆
+		}
+		else if (cur[i]=='1'){  //1->白
+			circle.beginPath();
+			circle.arc(blockSize*c+blockSize/2,blockSize*r+blockSize/2,blockSize/2-1,0,2*Math.PI);//画圆，x,y.r, ,pi值，true逆时针/false、顺时针
+			circle.strokeStyle = "black";//线条颜色
+			circle.stroke();//开始画圆
+		}
+	}
+}
+function pos_to_id(r,c){
+	return r*8+c;
+}
+var dx = new Array(-1,1,0,0,1,-1,1,-1);  //八方向延伸
+var dy = new Array(0,0,-1,1,1,-1,-1,1);
+function judge_chess(state,i){
+	var r = Math.floor(i/8);
+	var c = i%8;
+	var mark = false;
+	var my,him;
+	if (myColor){
+		my = '1';
+		him = '0'
+	}
+	else{
+		my = '0';
+		him = '1';
+	}
+
+	for (var j = 0; j < 8; j++){
+		if (replay[state][i] === '2' &&is_valid(r+dx[j],c+dy[j]))    //这格是空格
+			if(replay[state][pos_to_id(r+dx[j],c+dy[j])] === him){  //这个方向是敌军棋子,可以拓展
+				for (var px = r+2*dx[j], py = c+2*dy[j]; is_valid(px,py); px+=dx[j], py+=dy[j]){
+					if (replay[state][pos_to_id(px,py)] === my){  //敌方棋子在这个方向被我方包夹
+						mark = true;
+						break;
+					}else if (replay[state][pos_to_id(px,py)] === '2'){  //是空格 无法包夹
+						break;
+					}  // 是敌方棋子, 继续延伸
+			}
+		}
+	}
+	console.log("index"+i+"canmove?"+mark);
+	return mark;
+}
+function is_valid(r,c){
+	return r>=0 && r<8 && c>=0 && c<8;
+}
+function judge_move(state){
+	for (var i = 0; i < 64; i++){
+		can_move[i] = judge_chess(state,i);
+	}
+}
+function draw_move(){
+	for (var i = 0; i < 64; i++){
+		if (can_move[i]){
+			var ctx = can.getContext("2d");  //获取该canvas的2D绘图环境对象
+			ctx.strokeStyle = "#FF0000";
+			ctx.lineWidth = 3;
+			var r = Math.floor(i/8);
+			var c = i%8;
+			ctx.strokeRect(c*blockSize,r*blockSize,blockSize,blockSize); 
+		}else {
+		}
+	}
+}
+
+var game_start = false;
+var state = 0;
+var maxstate = 0;
+drawbg();
+draw(state);
+var wscore = 0;
+var bscore = 0;
+var origin;
+var source;
+
+//在线播放器
+can.onclick=function play(e){
+	if (game_start){
+		//获取点击相对棋盘坐标
+		var x =e.clientX - this.offsetLeft;
+		var y = e.clientY - this.offsetTop;
+		// alert(x);
+		var c = Math.floor(x/blockSize);
+		var r = Math.floor(y/blockSize);
+		/*
+		var circle = can.getContext("2d");
+		circle.beginPath();
+		circle.arc(70*c+35,70*r+35,30,0,2*Math.PI);//画圆，x,y.r, ,pi值，true逆时针/false、顺时针
+		circle.strokeStyle = "black";//线条颜色
+		circle.stroke();//开始画圆
+		*/
+		if (can_move[pos_to_id(r,c)] && myColor == nowPlayer){
+			console.log("message sent");
+			sendMsg(r,c);
+		}else {
+			console.log("message not sent");
+		}
+	}
+}
+if (DEBUG){
+	judge_move(0)
+	//draw_move(0);
+}
+//  ----------------------在线播放器--------------------------
+var token;
+var ws ;
+var myColor=0;
+var nowPlayer
+if (DEBUG){
+	token = "192.168.43.150:14286/1/player/1";
+	console.log(token);
+	ws = new WebSocket("wss://"+token);
+		//【用于指定连接成功后的回调函数】
+	ws.onopen = function (evt) {
+	    let msg = {token:token,request:"connect"};
+	    ws.send(JSON.stringify(msg));
+	};
+	 
+	//【用于指定收到服务器数据后的回调函数】
+	//【服务器数据有可能是文本，也有可能是二进制数据，需要判断】
+	ws.onmessage = function (event) {
+		game_start = true;
+		let msg = JSON.parse(event.data);
+		if (msg.request == "action"){
+			parse_state(msg.content);
+		}
+	};
+
+	ws.onclose = function (evt){
+		console.log("Connection close");
+	}
+}
+
+function sendMsg(r,c){
+	var num = r.toString()+c.toString();
+	num = num.toString();
+	var info = {"state":state,"opt":num}
+	var msg = {token:token,request:"action",content:JSON.stringify(info)};
+	ws.send(JSON.stringify(msg));
+}
+
+function parse_state(msg){ // 在线播放器
+	var str = "";
+	let json = JSON.parse(msg);
+ 	if (json.state >= 0){ 
+ 		initmove();
+ 		state = maxstate = json.state;
+ 		replay[state] = json.maze;
+ 		myColor = json.my_color;
+ 		var c = document.getElementById("color");
+ 		judge_move(state);
+ 		if (myColor == 0)
+ 			c.innerHTML = "你的颜色:黑"
+ 		else
+ 			c.innerHTML = "你的颜色:白"
+ 		nowPlayer = json.now_player;
+ 		var p  = document.getElementById("cur");
+  		if (nowPlayer == 0)
+ 			p.innerHTML = "现在颜色:黑"
+ 		else
+ 			p.innerHTML = "现在颜色:白"
+ 	 	var h = document.getElementById("hint");
+ 		if (myColor == nowPlayer)
+ 			h.innerHTML = "轮到你行动了!"
+ 		else 	
+ 			h.innerHTML = "对手回合,请稍候!"
+ 	}
+ 	else if (json.state == -1) {
+ 		initmove();
+ 		state += 1;
+ 		maxstate = state;
+ 		replay[state] = json.maze;  
+ 		game_start = false;
+ 		bscore = json["0"];
+ 		wscore = json["1"];
+ 		var c = document.getElementById("color");
+ 		var p  = document.getElementById("cur");
+ 		var h = document.getElementById("hint");
+ 		str = "游戏结束,白棋得分: "+wscore+"\n黑棋得分: "+bscore;
+ 		c.innerHTML = "游戏结束";
+ 		p.innerHTML = "白棋得分: " + wscore;
+ 		h.innerHTML = "黑棋得分: " + bscore;
+ 	}
+	clearCanvas();
+	drawbg();
+	draw(state);
+	draw_move(state);
+	//if (!game_start)
+	//	alert(str);	
+}
+
+//  ----------------------离线播放器--------------------------
+function readJson(event){
+	event.source.postMessage({message: 'caution'},event.origin)
+	let msg = event.data;
+	if (msg.message == "init_replay_player"){
+		let reader = new FileReader()
+		reader.onloadend = () => {
+			msg.replay_data = reader.result
+			parse(msg.replay_data);
+			let initMsg = { message: 'init_successfully',number_of_frames: maxstate+1 };
+			event.source.postMessage(initMsg,event.origin);
+		}
+		reader.readAsText(msg.replay_data)
+	}else if (msg.message == "load_frame"){
+		state = msg["index"];
+		refresh();
+	}else if (msg.message == "load_next_frame"){
+		next();
+	}else if (msg.message == "init_player_player"){ // 在线播放器
+		event.source.postMessage({message: 'caution', data: msg.token},event.origin)
+		var token_b64 = msg['token'];
+		token = atob(token_b64);
+		ws = new WebSocket("wss://"+token);
+
+
+		//【用于指定连接成功后的回调函数】
+		ws.onopen = function (evt) {
+		    console.log("Connection open...");
+		    let msg = {token:token_b64,request:"connect"};
+		    ws.send(JSON.stringify(msg));
+		};
+		 
+		//【用于指定收到服务器数据后的回调函数】
+		//【服务器数据有可能是文本，也有可能是二进制数据，需要判断】
+		ws.onmessage = function (event) {
+			game_start = true;
+			let msg = JSON.parse(event.data);
+			if (msg.request == "action"){
+				parse_state(msg.content);
+			}
+		};
+
+		ws.onclose = function (evt){
+			console.log("Connection close");
+		};
+
+	} else if (msg.message == "init_spectator_player"){ // 观战模式
+
+	}
+}
+
+
+function parse(replay_data){  // 离线回放
+	let json = JSON.parse(replay_data);
+    var len = json.length;
+    for (var i = 0 ; i < len; i++){
+     	let info = json[i];
+     	var state = info.state;
+     	if (state >= 0){
+     		replay[state] = info.maze;
+     		maxstate++;
+     	}
+     	else if (state == -1) {
+     		bscore = info["0"];
+     		wscore = info["1"];
+     		//console.log(bscore);
+     		//console.log(wscore);
+     	}
+    }
+     //console.log(json.name);
+     //console.log(json.age);	
+}
+
+/*
+ 	//读取离线回放文件 , 储存到result。
+     var inputElement = document.getElementById("files");
+     inputElement.addEventListener("change", handleFiles, false);
+     function handleFiles() {
+        var selectedFile = document.getElementById("files").files[0];//获取读取的File对象
+        var name = selectedFile.name;//读取选中文件的文件名
+        var size = selectedFile.size;//读取选中文件的大小
+        //console.log("文件名:"+name+"大小："+size);
+        var reader = new FileReader();//这里是核心！！！读取操作就是由它完成的。
+        reader.readAsText(selectedFile);//读取文件的内容
+
+ 		//当读取完成之后会回调这个函数，然后此时文件的内容存储到了result中。直接操作即可。
+         reader.onload = function(){
+             //console.log("读取结果：", this.result);
+             //console.log("读取结果转为JSON：");
+             let json = JSON.parse(this.result);
+             var len = json.length;
+             for (var i = 0 ; i < len; i++){
+             	let info = json[i];
+             	var state = info.state;
+             	if (state >= 0){
+             		replay[state] = info.maze;
+             		maxstate++;
+             	}
+             	else if (state == -1) {
+             		bscore = info["1"];
+             		wscore = info["0"];
+             		console.log(bscore);
+             		console.log(wscore);
+             	}
+             }
+             //console.log(json.name);
+             //console.log(json.age);
+         };
+     }
+*/
+
+
+function next(){
+	if (state < maxstate) {
+		state = state+1;
+	}
+	refresh();
+}
+
+function prev(){
+	if (state > 0) {
+		state = state-1;
+	}
+	refresh();
+}
+
+
+function refresh(){
+	if (state <= maxstate) {
+		clearCanvas();
+		drawbg();
+		draw(state);
+	}else {
+		alert("游戏结束\n白棋得分: "+wscore+"\n黑棋得分: "+bscore);		
+	}
+}
+function clearCanvas()
+{  
+    var c=document.getElementById("can");  
+    var cxt=c.getContext("2d");  
+    c.height=c.height;  
+}  
+
+ </script>
+</body>
+<div class = "text">
+<p id="color"></p><p id="cur"></p><p id="hint"></p>
+</div>
+</html>
+
