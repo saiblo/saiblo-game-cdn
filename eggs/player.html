@@ -1,9 +1,130 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<meta http-equiv="refresh" content="1; url = https://egg-display.netlify.app" />
-	</head>
-	<body>
-		Redirecting to <a href="https://egg-display.netlify.app">player website</a>...
-	</body>
+<head>
+  <meta charset="utf-8">
+
+  <title>Eggs</title>
+
+  <!--http://www.html5rocks.com/en/mobile/mobifying/-->
+  <meta name="viewport"
+        content="width=device-width,user-scalable=no,initial-scale=1, minimum-scale=1,maximum-scale=1"/>
+
+  <!--https://developer.apple.com/library/safari/documentation/AppleApplications/Reference/SafariHTMLRef/Articles/MetaTags.html-->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="format-detection" content="telephone=no">
+
+  <!-- force webkit on 360 -->
+  <meta name="renderer" content="webkit"/>
+  <meta name="force-rendering" content="webkit"/>
+  <!-- force edge on IE -->
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"/>
+  <meta name="msapplication-tap-highlight" content="no">
+
+  <!-- force full screen on some browser -->
+  <meta name="full-screen" content="yes"/>
+  <meta name="x5-fullscreen" content="true"/>
+  <meta name="360-fullscreen" content="true"/>
+
+  <!--fix fireball/issues/3568 -->
+  <!--<meta name="browsermode" content="application">-->
+  <meta name="x5-page-mode" content="app">
+
+  <!--<link rel="apple-touch-icon" href=".png" />-->
+  <!--<link rel="apple-touch-icon-precomposed" href=".png" />-->
+  
+  <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/gh/saiblo/saiblo-game-cdn@1.3.0/eggs/style-mobile.25fc5.css"/>
+  <link rel="icon" href="https://cdn.jsdelivr.net/gh/saiblo/saiblo-game-cdn@1.3.0/eggs/favicon.8de18.ico"/>
+</head>
+<body>
+  <script>
+    function debounce(f, msecs) {
+      let timer = null
+      return function(...args) {
+        if (timer === null) {
+          timer = setTimeout(() => { f(...args); timer = null; }, msecs)
+        }
+      }
+    }
+    window.addEventListener('message', (ev) => {
+      const msg = ev.data
+      console.log('Saiblo sent a message:', msg)
+      if (msg.message === 'init_replay_player') {
+        ev.source.postMessage({message: 'caution'}, event.origin)
+        function origResize(h) {
+          ev.source.postMessage({
+            message: "resized",
+            height: h-30
+          }, ev.origin)
+        }
+        window.saiblo = {
+          replay: msg.replay_data,
+          players: [],
+          confirmReplay(numberOfFrames) {
+            const initMsg = { message: 'init_successfully', number_of_frames: numberOfFrames }
+            ev.source.postMessage(initMsg, ev.origin)
+          },
+          resize: debounce(origResize, 100),
+          callback: {}
+        }
+        console.log('Got replay from parent window.')
+      } else if (msg.message === 'load_frame') {
+        if (window.saiblo.callback.loadFrame) {
+          window.saiblo.callback.loadFrame(msg["index"])
+        }
+      } else if (msg.message === 'load_next_frame' || msg.message === 'next_frame') {
+        if (window.saiblo.callback.nextFrame) {
+          window.saiblo.callback.nextFrame()
+        }
+      } else if (msg.message === "load_players") {
+        window.saiblo.players = msg.players
+      }
+    }, false)
+    console.log('Saiblo compatibility code injected.')
+  </script>
+  <canvas id="GameCanvas" oncontextmenu="event.preventDefault()" tabindex="0"></canvas>
+  <div id="splash">
+    <div class="progress-bar stripes">
+      <span style="width: 0%"></span>
+    </div>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/gh/saiblo/saiblo-game-cdn@1.3.0/eggs/src/settings.4bf3f.js" charset="utf-8"></script>
+<script src="https://cdn.jsdelivr.net/gh/saiblo/saiblo-game-cdn@1.3.0/eggs/main.8187a.js" charset="utf-8"></script>
+
+<script type="text/javascript">
+(function () {
+    // open web debugger console
+    if (typeof VConsole !== 'undefined') {
+        window.vConsole = new VConsole();
+    }
+
+    var debug = window._CCSettings.debug;
+    var splash = document.getElementById('splash');
+    splash.style.display = 'block';
+
+    function loadScript (moduleName, cb) {
+      function scriptLoaded () {
+          document.body.removeChild(domScript);
+          domScript.removeEventListener('load', scriptLoaded, false);
+          cb && cb();
+      };
+      var domScript = document.createElement('script');
+      domScript.async = true;
+      domScript.src = 'https://cdn.jsdelivr.net/gh/saiblo/saiblo-game-cdn@1.3.0/eggs/' + moduleName;
+      domScript.addEventListener('load', scriptLoaded, false);
+      document.body.appendChild(domScript);
+    }
+
+    loadScript(debug ? 'cocos2d-js.js' : 'cocos2d-js-min.cd71f.js', function () {
+      if (CC_PHYSICS_BUILTIN || CC_PHYSICS_CANNON) {
+        loadScript(debug ? 'physics.js' : 'physics-min.e6810.js', window.boot);
+      }
+      else {
+        window.boot();
+      }
+    });
+})();
+</script>
+</body>
 </html>
