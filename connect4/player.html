@@ -579,9 +579,23 @@
       }
     }
 
+    function escapeHTML(str) {
+      return str.replace(
+          /[&<>'"]/g,
+          tag =>
+              ({
+                  '&': '&amp;',
+                  '<': '&lt;',
+                  '>': '&gt;',
+                  "'": '&#39;',
+                  '"': '&quot;'
+              }[tag] || tag)
+      );
+    }
+
     function showPlayers(players) { // 设置玩家
-      document.querySelector("#op").innerHTML = players[0]
-      document.querySelector("#pp").innerHTML = players[1]
+      document.querySelector("#op").innerHTML = escapeHTML(players[0])
+      document.querySelector("#pp").innerHTML = escapeHTML(players[1])
     }
 
     function gameover(w, i) {
