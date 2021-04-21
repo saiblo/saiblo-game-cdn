@@ -1,3 +1,11 @@
+const eventQueue = [];
+
+function preloadOnMessage(event) {
+    eventQueue.push(event);
+}
+
+window.addEventListener("message", preloadOnMessage, false);
+
 pc.script.createLoadingScreen(function (app) {
     var showSplash = function () {
         // splash wrapper
@@ -12,7 +20,7 @@ pc.script.createLoadingScreen(function (app) {
         splash.style.display = 'none';
 
         var logo = document.createElement('img');
-        logo.src = 'https://player.dev.saiblo.net/mahjong/cover.png';
+        logo.src = 'https://cdn.jsdelivr.net/gh/saiblo/saiblo-game-cdn@latest/mahjong/cover.png';
         splash.appendChild(logo);
         logo.onload = function () {
             splash.style.display = 'block';
@@ -31,6 +39,21 @@ pc.script.createLoadingScreen(function (app) {
     var hideSplash = function () {
         var splash = document.getElementById('application-splash-wrapper');
         splash.parentElement.removeChild(splash);
+
+        app.graphicsDevice.on('resizecanvas', (w, h) => {
+            notifyCanvasHeight(h);
+            // 放弃全屏模式下保持长宽比的努力
+            if (Math.abs(w / 16 * 9 - h) > 10 && !app.isFullscreen()) app.graphicsDevice.resizeCanvas(w, w / 16 * 9);
+        });
+
+        for(const event of eventQueue) {
+            readMsg(event);
+        }
+        if (app.graphicsDevice.height > 10) {
+            notifyCanvasHeight(app.graphicsDevice.height);
+		}
+        window.removeEventListener('message', preloadOnMessage, false);
+        window.addEventListener("message", readMsg, false);
     };
 
     var setProgress = function (value) {
@@ -58,9 +81,9 @@ pc.script.createLoadingScreen(function (app) {
 
             '#application-splash {',
             '    position: absolute;',
-            '    top: calc(50% - 28px);',
-            '    width: 264px;',
-            '    left: calc(50% - 132px);',
+            '    top: calc(50% - 160px);',
+            '    width: 600px;',
+            '    left: calc(50% - 300px);',
             '}',
 
             '#application-splash img {',
@@ -81,8 +104,8 @@ pc.script.createLoadingScreen(function (app) {
             '}',
             '@media (max-width: 480px) {',
             '    #application-splash {',
-            '        width: 170px;',
-            '        left: calc(50% - 85px);',
+            '        width: 360px;',
+            '        left: calc(50% - 180px);',
             '    }',
             '}'
         ].join("\n");
@@ -102,7 +125,7 @@ pc.script.createLoadingScreen(function (app) {
     createCss();
 
     showSplash();
-        
+
     app.on('preload:end', function () {
         app.off('preload:progress');
     });
