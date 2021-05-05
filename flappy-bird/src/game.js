@@ -20,17 +20,21 @@ var game = window.game = {
     holdbacks: null,
     gameReadyScene: null,
     gameOverScene: null,
+    gameGradeScene: null,
+
+    auth: '',
+    token: '',
 
     init: function(){
         this.asset = new game.Asset();
-        this.asset.on('complete', function(e){
+        this.asset.on('complete', async function(e){
             this.asset.off('complete');
-            this.initStage();
+            await this.initStage();
         }.bind(this));
         this.asset.load();
     },
 
-    initStage: function(){
+    initStage: async function(){
         this.width = Math.min(innerWidth, 450) * 2;
         this.height = Math.min(innerHeight, 750) * 2;
         this.scale = 0.5;
@@ -68,7 +72,7 @@ var game = window.game = {
                 if(e.keyCode === 32) this.onUserInput(e);
             }.bind(this));
         }
-        
+
         //舞台更新
         this.stage.onUpdate = this.onUpdate.bind(this);
 
@@ -80,7 +84,7 @@ var game = window.game = {
         this.initCurrentScore();
 
         //准备游戏
-        this.gameReady();
+        await this.gameReady();
     },
 
     initBackground: function(){
@@ -107,7 +111,7 @@ var game = window.game = {
 
         //设置地面的y轴坐标
         this.ground.y = this.height - this.ground.height;
-        
+
         //移动地面
         Hilo.Tween.to(this.ground, {x:-groundOffset * this.ground.scaleX}, {duration:400, loop:true});
     },
@@ -164,10 +168,44 @@ var game = window.game = {
             visible: false
         }).addTo(this.stage);
 
+        //排行场景
+        this.gameGradeScene = new game.GradeScene({
+            id: 'gradeScene',
+            width: this.width,
+            height: this.height,
+            image: this.asset.over,
+            numberGlyphs: this.asset.numberGlyphs,
+            visible: false
+        }).addTo(this.stage);
+
         //绑定开始按钮事件
-        this.gameOverScene.getChildById('start').on(Hilo.event.POINTER_START, function(e){
+        this.gameOverScene.getChildById('start').on(Hilo.event.POINTER_START, async function(e){
             e.stopImmediatePropagation && e.stopImmediatePropagation();
-            this.gameReady();
+            await this.gameReady();
+        }.bind(this));
+
+        //绑定排行榜按钮事件
+        this.gameOverScene.getChildById('grade').on(Hilo.event.POINTER_START, async function(e){
+            e.stopImmediatePropagation && e.stopImmediatePropagation();
+            this.gameOverScene.hide();
+            this.gameGradeScene.show();
+        }.bind(this));
+
+        //绑定开始按钮事件
+        this.gameGradeScene.getChildById('start').on(Hilo.event.POINTER_START, async function(e){
+            e.stopImmediatePropagation && e.stopImmediatePropagation();
+            await this.gameReady();
+        }.bind(this));
+
+        //绑定排行榜按钮事件
+        this.gameGradeScene.getChildById('grade').on(Hilo.event.POINTER_START, function(e){
+            e.stopImmediatePropagation && e.stopImmediatePropagation();
+            this.gameGradeScene.hide();
+            let best = 0;
+            if(Hilo.browser.supportStorage){ // 希望坏事不要发生
+                best = parseInt(localStorage.getItem('hilo-flappy-best-score')) || 0;
+            }
+            this.gameOverScene.show(this.score, best);
         }.bind(this));
     },
 
@@ -196,8 +234,16 @@ var game = window.game = {
         }
     },
 
-    gameReady: function(){
+    getToken: async function(){
+        auth = decodeURIComponent((window.document.cookie + ';').match(/auth\._token\.local=(.*?);/)[1]);
+        const {token, score} = await uFetch('');
+        this.token = token;
+        localStorage.setItem('hilo-flappy-best-score', score ?? '0');
+    },
+
+    gameReady: async function(){
         this.gameOverScene.hide();
+        this.gameGradeScene.hide();
         this.state = 'ready';
         this.score = 0;
         this.currentScore.visible = true;
@@ -205,6 +251,7 @@ var game = window.game = {
         this.gameReadyScene.visible = true;
         this.holdbacks.reset();
         this.bird.getReady();
+        await this.getToken();
     },
 
     gameStart: function(){
@@ -213,7 +260,7 @@ var game = window.game = {
         this.holdbacks.startMove();
     },
 
-    gameOver: function(){
+    gameOver: async function(){
         if(this.state !== 'over'){
             //设置当前状态为结束over
             this.state = 'over';
@@ -224,7 +271,7 @@ var game = window.game = {
             //隐藏屏幕中间显示的分数
             this.currentScore.visible = false;
             //显示结束场景
-            this.gameOverScene.show(this.calcScore(), this.saveBestScore());
+            this.gameOverScene.show(this.calcScore(), await this.saveBestScore());
         }
     },
 
@@ -233,14 +280,19 @@ var game = window.game = {
         return this.score = count;
     },
 
-    saveBestScore: function(){
+    uploadBestScore: async function(score){
+        return (await uFetch('', {token: this.token, score})).score;
+    },
+
+    saveBestScore: async function(){
         var score = this.score, best = 0;
         if(Hilo.browser.supportStorage){
             best = parseInt(localStorage.getItem('hilo-flappy-best-score')) || 0;
         }
         if(score > best){
-            best = score;
+            score = await this.uploadBestScore(score);
             localStorage.setItem('hilo-flappy-best-score', score);
+            best = score;
         }
         return best;
     }
