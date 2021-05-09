@@ -1,4 +1,4 @@
-const DEV = true;
+const DEV = false;
 const baseUrl = DEV ? 'https://api.dev.saiblo.net/carnival/flappy-bird/' : 'https://api.saiblo.net/carnival/flappy-bird/';
 
 let auth;
