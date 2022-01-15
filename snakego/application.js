@@ -69,7 +69,7 @@ System.register([], function (_export, _context) {
 
     function loadBundle(name) {
       return new Promise(function (resolve, reject) {
-        cc.assetManager.loadBundle("https://cdn.jsdelivr.net/gh/saiblo/saiblo-game-cdn@latest/snakego/assets/" + name, function (err, bundle) {
+        cc.assetManager.loadBundle("https://player.dev.saiblo.net/2022-test/assets/" + name, function (err, bundle) {
           if (err) {
             return reject(err);
           }
@@ -97,7 +97,7 @@ System.register([], function (_export, _context) {
 
     function loadSettingsJson(cc) {
       var server = '';
-      var settings = 'https://cdn.jsdelivr.net/gh/saiblo/saiblo-game-cdn@latest/snakego/src/settings.json';
+      var settings = 'https://player.dev.saiblo.net/2022-test/src/settings.json';
       return new Promise(function (resolve, reject) {
         if (typeof fsUtils !== 'undefined' && !settings.startsWith('http')) {
           var result = fsUtils.readJsonSync(settings);
@@ -167,7 +167,7 @@ System.register([], function (_export, _context) {
     var launchScene = settings.launchScene; // load scene
 
     cc.director.loadScene(launchScene, null, function () {
-      cc.view.setDesignResolutionSize(960, 640, 4);
+      cc.view.setDesignResolutionSize(960, 640, 2);
       console.log("Success to load scene: ".concat(launchScene));
     });
   }
