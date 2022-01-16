@@ -1,4 +1,4 @@
-System.register(["https://game.cdn.saiblo.net/snakego/application.js"], function (_export, _context) {
+System.register(["https://cdn.jsdelivr.net/gh/saiblo/saiblo-game-cdn@latest/snakego/application.js"], function (_export, _context) {
   "use strict";
 
   var createApplication;
