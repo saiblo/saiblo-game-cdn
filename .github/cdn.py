@@ -16,7 +16,7 @@ try:
 
     req = models.PurgePathCacheRequest()
     params = {
-        "Paths": [ "https://cdn.saiblo.net/game" ],
+        "Paths": [ "https://game.cdn.saiblo.net/" ],
         "FlushType": "delete"
     }
     req.from_json_string(json.dumps(params))
