@@ -1,0 +1,22 @@
+name: Python Package using Conda
+on: [push]
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.10
+    - name: Install tencentcloud-sdk-python
+      run: |
+        pip install tencentcloud-sdk-python
+    - name: Purge CDN Cache
+      env:
+          SecretId: ${{ secrets.SecretId }}
+          SecretKey: ${{ secrets.SecretKey }}
+      run: |
+        python .github/cdn.py
+
+        
