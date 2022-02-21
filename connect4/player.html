@@ -537,9 +537,9 @@
         websocket.onmessage = function (event) {
           let data = JSON.parse(event.data)
           if (data.request == "history") {
-            let contents = JSON.parse(data.content)
+            let contents = data.content
             for (const message of contents) {
-                handleMsg(message, true);
+                handleMsg(JSON.parse(message), true);
             }
           } else if (data.request == "watch") {
             let message = JSON.parse(data.content)
