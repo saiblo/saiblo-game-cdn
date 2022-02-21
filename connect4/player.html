@@ -480,6 +480,30 @@
 
     var fw = null // 父网页
 
+    function handleMsg(message, is_watch = false) {
+            if (message.type == 0) { // 收到棋盘信息，初始化棋盘
+              initBoard(message.row, message.col, message.nox, message.noy)
+              ct = message.time
+              isnf = !message.is_first
+              changeShow()
+            } else if (message.type == 1) { // 收到落子信息，落子
+              if (message.lastx != -1) { // 如果是初始化棋盘信息，则忽略
+                putPiece(message.lasty) // 落子
+                changeShow()
+              }
+
+              // if (current ^ isnf) {
+              // clearInter() // 自己下完了，清除计时器
+              // } else {
+              changeState(is_watch ? 1 : 0) // 落子后如果是己方回合，切换状态
+              setInter(ct) // 开始计时
+              // }
+            } else if (message.type == 2) { // 收到输赢信息，显示
+              changeState(1) // 游戏结束，改变为不可操作状态
+              gameover(message.win, message.gameend_reason)
+            }
+    }
+
     window.addEventListener('message', receiveMessage, false) // 与父网页建立通信
     function receiveMessage(event) {
       fw = event.source
@@ -497,7 +521,32 @@
         }
         reader.readAsText(message.replay_data)
       } else if (message.message == "init_spectator_player") {
+        document.querySelector("#hintBoard").style.display = "flex"
 
+        // 1.连接到评测器
+        let token_b64 = message.token
+        token = atob(token_b64)
+        websocket = new WebSocket("wss://" + token)
+
+        websocket.onopen = function (event) {
+          console.log("judger connected");
+        }
+        // 1.
+
+        // 2.连接到评测器后收到消息
+        websocket.onmessage = function (event) {
+          let data = JSON.parse(event.data)
+          if (data.request == "history") {
+            let contents = JSON.parse(data.content)
+            for (const message of contents) {
+                handleMsg(message, true);
+            }
+          } else if (data.request == "watch") {
+            let message = JSON.parse(data.content)
+                handleMsg(message, true);
+          }
+        }
+        // 2.
       } else if (message.message == "init_player_player") { // 初始化游戏模式
         document.querySelector("#hintBoard").style.display = "flex"
 
@@ -520,27 +569,7 @@
           let data = JSON.parse(event.data)
           if (data.request == "action") {
             let message = JSON.parse(data.content)
-            if (message.type == 0) { // 收到棋盘信息，初始化棋盘
-              initBoard(message.row, message.col, message.nox, message.noy)
-              ct = message.time
-              isnf = !message.is_first
-              changeShow()
-            } else if (message.type == 1) { // 收到落子信息，落子
-              if (message.lastx != -1) { // 如果是初始化棋盘信息，则忽略
-                putPiece(message.lasty) // 落子
-                changeShow()
-              }
-
-              // if (current ^ isnf) {
-              // clearInter() // 自己下完了，清除计时器
-              // } else {
-              changeState(0) // 落子后如果是己方回合，切换状态
-              setInter(ct) // 开始计时
-              // }
-            } else if (message.type == 2) { // 收到输赢信息，显示
-              changeState(1) // 游戏结束，改变为不可操作状态
-              gameover(message.win, message.gameend_reason)
-            }
+            handleMsg(message);
           }
         }
         // 2.
