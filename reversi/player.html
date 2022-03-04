@@ -250,7 +250,7 @@ function sendMsg(r,c){
 	ws.send(JSON.stringify(msg));
 }
 
-function parse_state(msg){ // 在线播放器
+function parse_state(msg, is_watch = false){ // 在线播放器
 	var str = "";
 	let json = JSON.parse(msg);
  	if (json.state >= 0){ 
@@ -260,7 +260,9 @@ function parse_state(msg){ // 在线播放器
  		myColor = json.my_color;
  		var c = document.getElementById("color");
  		judge_move(state);
- 		if (myColor == 0)
+ 		if (is_watch)
+ 		    c.innerHTML = "观战模式"
+ 		else if (myColor == 0)
  			c.innerHTML = "你的颜色:黑"
  		else
  			c.innerHTML = "你的颜色:白"
@@ -347,7 +349,35 @@ function readJson(event){
 		};
 
 	} else if (msg.message == "init_spectator_player"){ // 观战模式
+        console.log(msg.token);
+        var token_b64 = msg['token'];
+		token = atob(token_b64);
+		ws = new WebSocket("wss://"+token);
 
+
+		//【用于指定连接成功后的回调函数】
+		ws.onopen = function (evt) {
+		    console.log("Connection open...");
+		};
+
+		//【用于指定收到服务器数据后的回调函数】
+		//【服务器数据有可能是文本，也有可能是二进制数据，需要判断】
+		ws.onmessage = function (event) {
+			game_start = true;
+			let msg = JSON.parse(event.data);
+			if (msg.request == "history"){
+			    for (const content of msg.content) {
+				    parse_state(content, true);
+				}
+			} else if (msg.request == "watch"){
+                parse_state(msg.content, true);
+			}
+		};
+
+		ws.onclose = function (evt){
+			console.log("Connection close");
+			console.log(evt);
+		};
 	}
 }
 
