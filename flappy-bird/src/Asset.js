@@ -15,13 +15,13 @@ var Asset = ns.Asset = Hilo.Class.create({
 
     load: function(){
         var resources = [
-            {id:'bg', src:'https://cdn.jsdelivr.net/gh/saiblo/saiblo-game-cdn@latest/flappy-bird/images/bg.png'},
-            {id:'ground', src:'https://cdn.jsdelivr.net/gh/saiblo/saiblo-game-cdn@latest/flappy-bird/images/ground.png'},
-            {id:'ready', src:'https://cdn.jsdelivr.net/gh/saiblo/saiblo-game-cdn@latest/flappy-bird/images/ready.png'},
-            {id:'over', src:'https://cdn.jsdelivr.net/gh/saiblo/saiblo-game-cdn@latest/flappy-bird/images/over.png'},
-            {id:'number', src:'https://cdn.jsdelivr.net/gh/saiblo/saiblo-game-cdn@latest/flappy-bird/images/number.png'},
-            {id:'bird', src:'https://cdn.jsdelivr.net/gh/saiblo/saiblo-game-cdn@latest/flappy-bird/images/bird.png'},
-            {id:'holdback', src:'https://cdn.jsdelivr.net/gh/saiblo/saiblo-game-cdn@latest/flappy-bird/images/holdback.png'}
+            {id:'bg', src:'https://game.cdn.saiblo.net/flappy-bird/images/bg.png'},
+            {id:'ground', src:'https://game.cdn.saiblo.net/flappy-bird/images/ground.png'},
+            {id:'ready', src:'https://game.cdn.saiblo.net/flappy-bird/images/ready.png'},
+            {id:'over', src:'https://game.cdn.saiblo.net/flappy-bird/images/over.png'},
+            {id:'number', src:'https://game.cdn.saiblo.net/flappy-bird/images/number.png'},
+            {id:'bird', src:'https://game.cdn.saiblo.net/flappy-bird/images/bird.png'},
+            {id:'holdback', src:'https://game.cdn.saiblo.net/flappy-bird/images/holdback.png'}
         ];
 
         this.queue = new Hilo.LoadQueue();
