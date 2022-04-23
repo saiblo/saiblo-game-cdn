@@ -1,6 +1,6 @@
-ASSET_PREFIX = "https://cdn.jsdelivr.net/gh/saiblo/saiblo-game-cdn@latest/mahjong/";
-SCRIPT_PREFIX = "https://cdn.jsdelivr.net/gh/saiblo/saiblo-game-cdn@latest/mahjong/";
-SCENE_PATH = "https://cdn.jsdelivr.net/gh/saiblo/saiblo-game-cdn@latest/mahjong/1116708.json";
+ASSET_PREFIX = "https://game.cdn.saiblo.net/mahjong/";
+SCRIPT_PREFIX = "https://game.cdn.saiblo.net/mahjong/";
+SCENE_PATH = "https://game.cdn.saiblo.net/mahjong/1116708.json";
 CONTEXT_OPTIONS = {
     'antialias': true,
     'alpha': false,
@@ -9,7 +9,7 @@ CONTEXT_OPTIONS = {
     'powerPreference': "default"
 };
 SCRIPTS = [ 46202183, 44747522, 44893598, 44893602, 44921856, 44967261, 44919245, 45913008, 44925897, 44910141, 45056879, 45748634, 46042744, 46102756, 46110856 ];
-CONFIG_FILENAME = "https://cdn.jsdelivr.net/gh/saiblo/saiblo-game-cdn@latest/mahjong/config.json";
+CONFIG_FILENAME = "https://game.cdn.saiblo.net/mahjong/config.json";
 INPUT_SETTINGS = {
     useKeyboard: true,
     useMouse: true,

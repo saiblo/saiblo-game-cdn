@@ -20,7 +20,7 @@ pc.script.createLoadingScreen(function (app) {
         splash.style.display = 'none';
 
         var logo = document.createElement('img');
-        logo.src = 'https://cdn.jsdelivr.net/gh/saiblo/saiblo-game-cdn@latest/mahjong/cover.png';
+        logo.src = 'https://game.cdn.saiblo.net/mahjong/cover.png';
         splash.appendChild(logo);
         logo.onload = function () {
             splash.style.display = 'block';
