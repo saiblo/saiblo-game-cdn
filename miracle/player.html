@@ -4,8 +4,8 @@
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>Unity WebGL Player | Miracle</title>
-    <link rel="shortcut icon" href="TemplateData/favicon.ico">
-    <link rel="stylesheet" href="TemplateData/style.css">
+    <link rel="shortcut icon" href="https://game.cdn.saiblo.net/miracle/TemplateData/favicon.ico">
+    <link rel="stylesheet" href="https://game.cdn.saiblo.net/miracle/TemplateData/style.css">
   </head>
   <body>
     <div id="unity-container" class="unity-desktop">
@@ -83,6 +83,7 @@
         canvas.style.height = "540px";
       // }
       loadingBar.style.display = "block";
+      parent.postMessage({message: "resized", height: window.innerWidth * 9 / 16 + 100});
 
       var script = document.createElement("script");
       script.src = loaderUrl;
