@@ -65,7 +65,7 @@ function createUnityInstance(canvas, config, onProgress) {
   for (var parameter in config)
     Module[parameter] = config[parameter];
 
-  Module.streamingAssetsUrl = new URL(Module.streamingAssetsUrl, document.URL).href;
+  Module.streamingAssetsUrl = new URL(Module.streamingAssetsUrl, /*document.URL*/ "https://game.cdn.saiblo.net/antwar").href;
 
   // Operate on a clone of Module.disabledCanvasEvents field so that at Quit time
   // we will ensure we'll remove the events that we created (in case user has
