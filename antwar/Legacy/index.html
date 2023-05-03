@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en-us">
+
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <title>Container</title>
+</head>
+
+<body>
+  <iframe src="player.html" height="900" width="1600" id="player">
+  </iframe>
+  <div id="GamePlay buttons">
+    评测机地址 <br/>
+    <input id="judger-addr" type="text"> </input> 
+    <button id="play-button">Play</button><br/>
+    <!--input type="checkbox" id="guest-mode" checked> Guest </input-->
+    <button id="replay-button">Replay</button>
+    <!--button id="spectate-button">Spectate</button>
+    <button id="save-button">Save</button-->
+    <button id="prev-frame-button"> << </button>
+    <button id="next-frame-button"> >> </button>
+    <label id ="__frame_cnt"></label>
+  </div>
+  <script>
+    const player = document.querySelector('#player')
+    var replayBtn = document.querySelector('#replay-button');
+    var prevFrameBtn = document.querySelector('#prev-frame-button')
+    var nextFrameBtn = document.querySelector('#next-frame-button');
+    //var saveBtn = document.querySelector('#save-button');
+    var playBtn = document.querySelector('#play-button');
+    //var spectateBtn = document.querySelector('#spectate-button');
+    var frame_cnt_label = document.querySelector('#__frame_cnt');
+    //var guestCheckBox = document.getElementById("guest-mode");
+    var judger_addr = document.querySelector('#judger-addr')
+    var framecnt = 0
+    var currframe = 0
+    prevFrameBtn.onclick = () => {
+      if(currframe <= 0) return
+      SendToChild({
+        message: 'load_frame',
+        index: currframe
+      })
+      currframe--
+    }
+    nextFrameBtn.onclick = () => {
+      if(currframe >= framecnt) return
+      SendToChild({
+        message: 'load_next_frame'
+      })
+      currframe++
+      frame_cnt_label.innerHTML = currframe + ' / ' + framecnt
+    };
+
+    /*saveBtn.onclick = () => {
+      SendToChild({
+        message: 'save_result'
+      })
+    };*/
+
+    playBtn.onclick = () => {
+      SendToChild({
+        message: 'init_player_player',
+        token: btoa(judger_addr.value) //guestCheckBox.checked ? 'MTI3LjAuMC4xOjIzMDAx' : 'MTI3LjAuMC4xOjIzMDAw'
+      })
+    };
+
+    /*spectateBtn.onclick = () => {
+      SendToChild({
+        message: 'init_spectator_player',
+        token: 'MTI3LjAuMC4xOjg3NjU='
+      })
+    };*/
+
+    replayBtn.onclick = () => {
+      var input = document.createElement('input');
+      input.type = 'file';
+
+      input.onchange = e => { 
+
+        // getting a hold of the file reference
+        var file = e.target.files[0]; 
+        SendToChild({
+          message: "init_replay_player",
+          replay_data: file
+        })
+      }
+
+      input.click();
+    }
+    const SendToChild = payload =>
+    player.contentWindow.postMessage(payload)
+    let tokenB64 = null
+    let ws = null
+    window.onmessage = event => {
+      const payload = event.data
+      console.log(payload)
+      switch(payload.message) {
+        case 'init_successfully':
+          framecnt = payload.number_of_frames
+          frame_cnt_label.innerHTML = '1 / ' + framecnt
+          break
+        case 'resized':
+          player.height = payload.height
+          break
+        case 'setB64':
+          ws = payload.socket
+          tokenB64 = payload.token
+          break
+        default:
+          console.error('Type ' + payload.message + ' not implemented')
+          break 
+      }
+    }
+  </script>
+</body>
+
+</html>
