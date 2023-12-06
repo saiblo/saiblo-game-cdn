@@ -5,8 +5,8 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>Unity WebGL Player | Ant_Player</title>
     <!--prefix: https://player.dev.saiblo.net/2023TEST/-->
-    <link rel="shortcut icon" href="https://game.cdn.saiblo.net/antwar/TemplateData/favicon.ico">
-    <link rel="stylesheet" href="https://game.cdn.saiblo.net/antwar/TemplateData/style.css">
+    <link rel="shortcut icon" href="https://game.cdn.saiblo.net/generals/TemplateData/favicon.ico">
+    <link rel="stylesheet" href="https://game.cdn.saiblo.net/generals/TemplateData/style.css">
   </head>
   <body>
     <div id="unity-container" class="unity-desktop">
@@ -28,16 +28,15 @@
     </div>
     
     <script>
-      var buildUrl = "https://game.cdn.saiblo.net/antwar/Build";
-      var loaderUrl = buildUrl + "/dist.loader.js";
+      var buildUrl = "https://game.cdn.saiblo.net/generals/Build";
+      var loaderUrl = buildUrl + "/generalTemplate.loader.js";
       var config = {
-        dataUrl: buildUrl + "/dist.data",
-        frameworkUrl: buildUrl + "/dist.framework.js",
-        codeUrl: buildUrl + "/dist.wasm",
-        symbolsUrl: buildUrl + "/dist.symbols.json",
+        dataUrl: buildUrl + "/generalTemplate.data",
+        frameworkUrl: buildUrl + "/generalTemplate.framework.js",
+        codeUrl: buildUrl + "/generalTemplate.wasm",
         streamingAssetsUrl: "StreamingAssets",
         companyName: "DefaultCompany",
-        productName: "Ant_Player",
+        productName: "Generals_Player",
         productVersion: "1.0",
         matchWebGLToCanvasSize: false,
       };
