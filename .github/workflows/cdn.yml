@@ -24,7 +24,7 @@ jobs:
     - name: Upload to Tencent COS
       run: |
         rm -r .git
-        coscmd upload -rs --delete . /
+        coscmd upload -rs --delete --yes . /
     - name: Purge CDN Cache
       env:
           SecretId: ${{ secrets.SecretId }}
