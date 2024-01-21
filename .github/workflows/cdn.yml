@@ -22,7 +22,9 @@ jobs:
         region: ${{ secrets.REGION }}
       run: coscmd config -a $secret_id -s $secret_key -b $bucket -r $region
     - name: Upload to Tencent COS
-      run: coscmd upload -rs --delete . /
+      run: |
+        rm -r .git
+        coscmd upload -rs --delete . /
     - name: Purge CDN Cache
       env:
           SecretId: ${{ secrets.SecretId }}
