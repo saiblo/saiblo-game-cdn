@@ -1,181 +1,122 @@
 <!DOCTYPE html>
 <html lang="en-us">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>Unity WebGL Player | Generals-Player</title>
+    <link rel="shortcut icon" href="TemplateData/favicon.ico">
+    <link rel="stylesheet" href="TemplateData/style.css">
+  </head>
+  <body>
+    <div id="unity-container" class="unity-desktop">
+      <canvas id="unity-canvas" width=1920 height=1080 tabindex="-1"></canvas>
+      <div id="unity-loading-bar">
+        <div id="unity-logo"></div>
+        <div id="unity-progress-bar-empty">
+          <div id="unity-progress-bar-full"></div>
+        </div>
+      </div>
+      <div id="unity-warning"> </div>
+      <div id="unity-footer">
+        <div id="unity-webgl-logo"></div>
+        <div id="unity-fullscreen-button"></div>
+        <div id="unity-build-title">Generals-Player</div>
+      </div>
+    </div>
+    <script>
 
-<head>
-  <meta charset="utf-8">
-  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-  <title>Container</title>
-</head>
+      var container = document.querySelector("#unity-container");
+      var canvas = document.querySelector("#unity-canvas");
+      var loadingBar = document.querySelector("#unity-loading-bar");
+      var progressBarFull = document.querySelector("#unity-progress-bar-full");
+      var fullscreenButton = document.querySelector("#unity-fullscreen-button");
+      var warningBanner = document.querySelector("#unity-warning");
 
-<body>
-  <iframe src="player.html" height="900" width="1600" id="player">
-  </iframe>
-  <div id="GamePlay buttons">
-    <button id="play-button">Play</button>
-    <input type="checkbox" id="guest-mode" checked> Guest </input>
-    <button id="replay-button">Replay</button>
-    <button id="spectate-button">Spectate</button>
-    <button id="save-button">Save</button>
-    <button id="next-frame-button"> >> </button>
-    <label id ="__frame_cnt"></label>
-    <input/>
-  </div>
-  <div id="DebugButtons">
-    Ant: (
-    <input id="ant_x" type="text"></input>
-    , 
-    <input id="ant_y" type="text"></input>
-    )
-    <button id="Spawn_Ant"> Spawn Ant </button>
-  Ant ID:
-  <input id="Del_ant_id" type="text"></input>
-  <button id="Del_Ant"> Delete Ant </button>
-  <button id="Max_Coins"> Max Coins </button>
-  <input id="Mitigate_Logic" type="checkbox" checked>Mitigate Logic</input>
-  </div>
-  <script>
-    const player = document.querySelector('#player')
-    var replayBtn = document.querySelector('#replay-button');
-    var nextFrameBtn = document.querySelector('#next-frame-button');
-    var saveBtn = document.querySelector('#save-button');
-    var playBtn = document.querySelector('#play-button');
-    var spectateBtn = document.querySelector('#spectate-button');
-    var frame_cnt_label = document.querySelector('#__frame_cnt');
-    var guestCheckBox = document.getElementById("guest-mode");
-    var SpawnAnt = document.querySelector('#Spawn_Ant')
-      var DelAnt = document.querySelector('#Del_Ant')
-      var MaxCoins = document.querySelector('#Max_Coins')
-      var AntX = document.querySelector('#ant_x')
-      var AntY = document.querySelector('#ant_y')
-      var Mitigate_Logic = document.querySelector('#Mitigate_Logic')
-      var Del_ant_id = document.querySelector('#Del_ant_id')
-
-    var framecnt = 0
-    var currframe = 1
-    nextFrameBtn.onclick = () => {
-      if(currframe >= framecnt) return
-      SendToChild({
-        message: 'load_next_frame'
-      })
-      currframe++
-      frame_cnt_label.innerHTML = currframe + ' / ' + framecnt
-    };
-
-    saveBtn.onclick = () => {
-      SendToChild({
-        message: 'save_result'
-      })
-    };
-
-    playBtn.onclick = () => {
-      SendToChild({
-        message: 'init_player_player',
-        token: guestCheckBox.checked ? 'MTI3LjAuMC4xOjIzMDAx' : 'MTI3LjAuMC4xOjIzMDAw'
-      })
-    };
-
-    spectateBtn.onclick = () => {
-      SendToChild({
-        message: 'init_spectator_player',
-        token: 'MTI3LjAuMC4xOjg3NjU='
-      })
-    };
-
-    replayBtn.onclick = () => {
-      var input = document.createElement('input');
-      input.type = 'file';
-
-      input.onchange = e => { 
-
-        // getting a hold of the file reference
-        var file = e.target.files[0]; 
-        SendToChild({
-          message: "init_replay_player",
-          replay_data: file
-        })
-      }
-
-      input.click();
-    }
-    const SendToChild = payload =>
-    player.contentWindow.postMessage(payload)
-    let tokenB64 = null
-    let ws = null
-    window.onmessage = event => {
-      const payload = event.data
-      console.log(payload)
-      switch(payload.message) {
-        case 'init_successfully':
-          framecnt = payload.number_of_frames
-          frame_cnt_label.innerHTML = '1 / ' + framecnt
-          break
-        case 'resized':
-          player.height = payload.height
-          break
-        case 'setB64':
-          ws = payload.socket
-          tokenB64 = payload.token
-          break
-        default:
-          console.error('Type ' + payload.message + ' not implemented')
-          break 
-      }
-    }
-    SpawnAnt.onclick = () => {
-        const content = [{
-          id: -1,
-          type: Mitigate_Logic.checked ? 7: 91,
-          pos: {
-            x: Number(AntX.value),
-            y: Number(AntY.value),
-          },
-          args: -1,
-        }]
-        const str_content = JSON.stringify(content)
-        const send_packet = {
-          message: 'ToSocket',
-          request: 'action',
-          token: tokenB64,
-          content: str_content
+      // Shows a temporary message banner/ribbon for a few seconds, or
+      // a permanent error message on top of the canvas if type=='error'.
+      // If type=='warning', a yellow highlight color is used.
+      // Modify or remove this function to customize the visually presented
+      // way that non-critical warnings and error messages are presented to the
+      // user.
+      function unityShowBanner(msg, type) {
+        function updateBannerVisibility() {
+          warningBanner.style.display = warningBanner.children.length ? 'block' : 'none';
         }
-        SendToChild(send_packet)
-      }
-      DelAnt.onclick = () => {
-        const content = [{
-          id: Number(Del_ant_id.value),
-          type: Mitigate_Logic.checked ? 8: 92,
-          pos: {
-            x: -1,
-            y: -1,
-          },
-          args: -1,
-        }]
-        const str_content = JSON.stringify(content)
-        const send_packet = {
-          message: 'ToSocket',
-          request: 'action',
-          token: tokenB64,
-          content: str_content
+        var div = document.createElement('div');
+        div.innerHTML = msg;
+        warningBanner.appendChild(div);
+        if (type == 'error') div.style = 'background: red; padding: 10px;';
+        else {
+          if (type == 'warning') div.style = 'background: yellow; padding: 10px;';
+          setTimeout(function() {
+            warningBanner.removeChild(div);
+            updateBannerVisibility();
+          }, 5000);
         }
-        SendToChild(send_packet)
+        updateBannerVisibility();
       }
-      MaxCoins.onclick = () => {
-        const content = [{
-          id: -1,
-          type: Mitigate_Logic.checked ? 9: 93,
-          pos: {x: -1, y: -1},
-          args: -1,
-        }]
-        const str_content = JSON.stringify(content)
-        const send_packet = {
-          message: 'ToSocket',
-          request: 'action',
-          token: tokenB64,
-          content: str_content
-        }
-        SendToChild(send_packet)
-      }
-  </script>
-</body>
 
+      var buildUrl = "Build";
+      var loaderUrl = buildUrl + "/build.loader.js";
+      var config = {
+        dataUrl: buildUrl + "/build.data",
+        frameworkUrl: buildUrl + "/build.framework.js",
+        codeUrl: buildUrl + "/build.wasm",
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: "DefaultCompany",
+        productName: "Generals-Player",
+        productVersion: "0.1",
+        showBanner: unityShowBanner,
+      };
+
+      // By default, Unity keeps WebGL canvas render target size matched with
+      // the DOM size of the canvas element (scaled by window.devicePixelRatio)
+      // Set this to false if you want to decouple this synchronization from
+      // happening inside the engine, and you would instead like to size up
+      // the canvas DOM size and WebGL render target sizes yourself.
+      // config.matchWebGLToCanvasSize = false;
+
+      if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+        // Mobile device style: fill the whole browser client area with the game canvas:
+
+        var meta = document.createElement('meta');
+        meta.name = 'viewport';
+        meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
+        document.getElementsByTagName('head')[0].appendChild(meta);
+        container.className = "unity-mobile";
+        canvas.className = "unity-mobile";
+
+        // To lower canvas resolution on mobile devices to gain some
+        // performance, uncomment the following line:
+        // config.devicePixelRatio = 1;
+
+
+      } else {
+        // Desktop style: Render the game canvas in a window that can be maximized to fullscreen:
+
+        canvas.style.width = "1920px";
+        canvas.style.height = "1080px";
+      }
+
+      loadingBar.style.display = "block";
+
+      var script = document.createElement("script");
+      script.src = loaderUrl;
+      script.onload = () => {
+        createUnityInstance(canvas, config, (progress) => {
+          progressBarFull.style.width = 100 * progress + "%";
+              }).then((unityInstance) => {
+                loadingBar.style.display = "none";
+                fullscreenButton.onclick = () => {
+                  unityInstance.SetFullscreen(1);
+                };
+              }).catch((message) => {
+                alert(message);
+              });
+            };
+
+      document.body.appendChild(script);
+
+    </script>
+  </body>
 </html>

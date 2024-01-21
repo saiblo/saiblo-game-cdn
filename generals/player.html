@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Unity WebGL Player | Ant_Player</title>
+    <title>Unity WebGL Player | Generals-Player</title>
     <!--prefix: https://player.dev.saiblo.net/2023TEST/-->
     <link rel="shortcut icon" href="https://game.cdn.saiblo.net/generals/TemplateData/favicon.ico">
     <link rel="stylesheet" href="https://game.cdn.saiblo.net/generals/TemplateData/style.css">
@@ -18,7 +18,7 @@
         </div>
       </div>
       <div id="unity-mobile-warning">
-        WebGL builds are not supported on mobile devices.
+        <!-- WebGL builds are not supported on mobile devices. -->
       </div>
       <!--div id="unity-footer">
         <div id="unity-webgl-logo"></div>
@@ -29,16 +29,16 @@
     
     <script>
       var buildUrl = "https://game.cdn.saiblo.net/generals/Build";
-      var loaderUrl = buildUrl + "/generalTemplate.loader.js";
+      var loaderUrl = buildUrl + "/build.loader.js";
       var config = {
-        dataUrl: buildUrl + "/generalTemplate.data",
-        frameworkUrl: buildUrl + "/generalTemplate.framework.js",
-        codeUrl: buildUrl + "/generalTemplate.wasm",
+        dataUrl: buildUrl + "/build.data",
+        frameworkUrl: buildUrl + "/build.framework.js",
+        codeUrl: buildUrl + "/build.wasm",
         streamingAssetsUrl: "StreamingAssets",
         companyName: "DefaultCompany",
-        productName: "Generals_Player",
+        productName: "Generals",
         productVersion: "1.0",
-        matchWebGLToCanvasSize: false,
+        matchWebGLToCanvasSize: true,
       };
 
       var container = document.querySelector("#unity-container");
@@ -55,16 +55,17 @@
         setTimeout(() => {
           mobileWarning.style.display = "none";
         }, 5000);
-      } else */{
-        canvas.style.width = "1280px";
-        canvas.style.height = "720px";
-      }
+      } else */
+      
+      canvas.style.width = "1280px";
+      canvas.style.height = "720px";
       loadingBar.style.display = "block";
 
       var script = document.createElement("script");
       var w_src = window.parent
       var src_msg = []
       var unity_instance = null
+      var line_array = []
       let loaded = false
       let tokenB64 = null
       let ws = null
@@ -83,9 +84,17 @@
         const payload = e.data
         const send_to_player = __payload => {
           if(loaded && unity_instance !== null)
-            unity_instance.SendMessage('Scripts', 'HandleMessage', JSON.stringify(__payload))
+          {
+            //console.log(JSON.stringify(__payload))
+            unity_instance.SendMessage('Main Controller', 'HandleMessage', JSON.stringify(__payload))
+          }
+            
           else 
-            src_msg.push(__payload)
+          {
+             console.log("unloaded")
+             src_msg.push(__payload)
+          }
+           
         }
         if(payload.message === 'init_replay_player') {
           // setting up the reader
@@ -93,7 +102,9 @@
 
           // here we tell the reader what to do when it's done reading...
           reader.onload = readerEvent => {
-            payload.payload = readerEvent.target.result; // this is the content!
+            var result = readerEvent.target.result
+            line_array = result.split('\n');
+            payload.payload = line_array.length - 1; // this is the content!
             payload.replay_data = []
             send_to_player(payload)
           }
@@ -102,6 +113,7 @@
           reader.readAsText(payload.replay_data,'UTF-8');
           window.dispatchEvent(new Event('resize'))
         } else if(payload.message === 'init_player_player'){
+           console.log("player mode in front");
            tokenB64 = payload.token
            send_to_player(payload)
            window.dispatchEvent(new Event('resize'))
@@ -157,12 +169,20 @@
             break;
             case 'loaded':
             {
+              console.log( "loaded in frontend")
               loaded = true
               const src_msg_mirr = []
               while(src_msg.length > 0)
                 src_msg_mirr.push(src_msg.pop())
               while(src_msg_mirr.length > 0)
-                unity_instance.SendMessage('Scripts', 'HandleMessage', JSON.stringify(src_msg_mirr.pop()))
+              {
+                console.log("send to player")
+                str = JSON.stringify(src_msg_mirr.pop())
+                //console.log( str)
+                unity_instance.SendMessage('Main Controller', 'HandleMessage',  str)
+                console.log("send to player end")
+              }
+
               
             }break;
           default:
@@ -186,11 +206,11 @@
             const payload = JSON.parse(msg_mirr.pop())
             if(payload.request === 'connect'){
               tokenB64 = payload.token
-              /*w_src.postMessage(JSON.parse(JSON.stringify({
+              w_src.postMessage(JSON.parse(JSON.stringify({
                 message: 'setB64',
                 socket: ws,
                 token: tokenB64,
-              })))*/
+              })))
 
             }
             ws.send(JSON.stringify(payload))
@@ -205,7 +225,7 @@
         })
         ws.addEventListener('message', (event) =>{
           // console.log(event.data)
-          unity_instance.SendMessage('Scripts', 'Recv', event.data)
+          unity_instance.SendMessage('Main Controller', 'ReceiveWebSocketMessage', event.data)
         })
         ws.addEventListener('close', (event) => {
           alert("Warning: Connection to judger lost.")
@@ -229,6 +249,14 @@
           msg_stack.push(str_payload)
         }
       };
+      window.SendOperation = function( index )
+      {
+        var operationData = line_array[index]
+        console.log(operationData);
+        unity_instance.SendMessage('Main Controller', 'HandleOperation', operationData)
+      }
     </script>
   </body>
 </html>
+
+<!--https://player.dev.saiblo.net/2024TEST/>
