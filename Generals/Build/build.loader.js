@@ -92,7 +92,10 @@ function createUnityInstance(t, n, c) {
   e(n, "productVersion", "1.0"),
   n))
     l[o] = n[o];
-  l.streamingAssetsUrl = new URL(l.streamingAssetsUrl, "https://game.cdn.saiblo.net/generals/").href;
+  l.streamingAssetsUrl = new URL(
+    l.streamingAssetsUrl,
+    "https://game.cdn.saiblo.net/Generals/"
+  ).href;
   var a = l.disabledCanvasEvents.slice();
   function i(e) {
     e.preventDefault();
