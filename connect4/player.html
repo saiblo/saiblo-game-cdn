@@ -531,6 +531,10 @@
         websocket.onopen = function (event) {
           console.log("judger connected");
         }
+
+        websocket.onerror = function (event) {
+          alert("与评测机连接失败，请刷新网页。");
+        }
         // 1.
 
         // 2.连接到评测器后收到消息
@@ -561,6 +565,10 @@
             token: token_b64,
             request: "connect"
           }))
+        }
+
+        websocket.onerror = function (event) {
+          alert("与评测机连接失败，请刷新网页。");
         }
         // 1.
 

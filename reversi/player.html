@@ -226,6 +226,10 @@ if (DEBUG){
 	    let msg = {token:token,request:"connect"};
 	    ws.send(JSON.stringify(msg));
 	};
+
+	ws.onerror = function (evt) {
+	    alert("与评测机连接失败，请刷新网页。");
+	}
 	 
 	//【用于指定收到服务器数据后的回调函数】
 	//【服务器数据有可能是文本，也有可能是二进制数据，需要判断】
@@ -333,6 +337,10 @@ function readJson(event){
 		    let msg = {token:token_b64,request:"connect"};
 		    ws.send(JSON.stringify(msg));
 		};
+
+		ws.onerror = function (evt) {
+		    alert("与评测机连接失败，请刷新网页。");
+		}
 		 
 		//【用于指定收到服务器数据后的回调函数】
 		//【服务器数据有可能是文本，也有可能是二进制数据，需要判断】
@@ -359,6 +367,10 @@ function readJson(event){
 		ws.onopen = function (evt) {
 		    console.log("Connection open...");
 		};
+
+		ws.onerror = function (evt) {
+		    alert("与评测机连接失败，请刷新网页。");
+		}
 
 		//【用于指定收到服务器数据后的回调函数】
 		//【服务器数据有可能是文本，也有可能是二进制数据，需要判断】
