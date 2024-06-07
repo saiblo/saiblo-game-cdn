@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>猜数字</title>
+
+  <script>
+    window.addEventListener('message', receiveMessage, false) // 与父网页建立通信
+    function receiveMessage(event) {
+      fw = event.source
+
+      let message = event.data
+      if (message.message === "init_replay_player") { // 初始化回放模式
+        let reader = new FileReader()
+        reader.onloadend = function () {
+          document.getElementById("replay").innerText = "回放文件：" + reader.result;
+
+          event.source.postMessage({
+            message: "init_successfully",
+            number_of_frames: JSON.parse(reader.result).rounds.length // 返回总帧数
+          }, "*")
+        }
+        reader.readAsText(message.replay_data)
+      }
+    }
+
+  </script>
+</head>
+
+<body style="background-color: white;">
+<div><p id="replay"></p></div>
+</body>
+
+</html>
